@@ -31,11 +31,6 @@
         default: false
       }
     },
-    data() {
-      return {
-
-      }
-    },
     mounted() {
       setTimeout(() => {
         this._initScroll()

@@ -1,6 +1,7 @@
 <template>
  <div class="singer">
-   <list-view :list="singers"></list-view>
+   <list-view :list="singers" @select="selectSinger"></list-view>
+   <router-view></router-view>
  </div>
 </template>
 
@@ -20,6 +21,7 @@
     this._getSingerList()
   },
   methods: {
+     // 获取数据
     _getSingerList() {
      const hot = -100
      getSingerList(hot).then(res => {
@@ -27,6 +29,10 @@
        this.singers = res.singerList.data.singerlist
       }
      })
+    },
+    // 处理点击每个歌手函数
+    selectSinger(item) {
+      this.$router.push(`/singer/${item.singer_id}`)
     }
   },
   components: {

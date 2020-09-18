@@ -12,5 +12,16 @@ export function addClass(el, className) {
   }
   let newClass = el.className.split(' ');
   newClass.push(className)
-  el.className = newClass.join(' ') 
+  el.className = newClass.join(' ')
+}
+
+// 3. 获取自定义属性
+export function getData(el, name, value) {
+  const prefix = 'data-'
+  name = prefix + name
+  if (value) {
+    return el.setAttribute(name, value)
+  }else {
+    return el.getAttribute(name)
+  }
 }

@@ -1,6 +1,6 @@
 <template>
  <div class="recommend">
-   <BScroll class="scroll-wrapper" :data="recommendList">
+   <BScroll class="scroll-wrapper" :data="recommendList" ref="scrollWrapper">
      <div>
        <!-- 存放轮播图容器 -->
        <div class="swiper-wrap">
@@ -18,7 +18,7 @@
          <ul>
            <li class="item" v-for="(item, index) in recommendList" :key="index">
              <div class="l-image">
-               <img :src="item.imgurl" alt="">
+               <img v-lazy="item.imgurl" @load="imgLoad" alt="">
              </div>
              <div class="r-describe">
                <h2 v-html="item.creator.name"></h2>
@@ -43,6 +43,7 @@ import Loading from 'base/loading/loading'
 
 import { getSongList } from 'api/recommend'
 import { ERR_OK } from 'api/config'
+import _ from 'loadsh'
  export default {
    data () {
      return {
@@ -86,7 +87,11 @@ import { ERR_OK } from 'api/config'
            this.recommendList = res.data.list
          }
        })
-     }
+     },
+     // 解决图片加载不了的问题
+     imgLoad: _.debounce(function () {
+        this.$refs.scrollWrapper.refresh()
+     }, 20)
    },
    components: {
      Swiper,

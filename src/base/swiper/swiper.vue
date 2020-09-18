@@ -43,10 +43,19 @@ BScroll.use(Slide)
     if (this.autoPlay) {
       this.play()
     }
+
+    // 窗口改变时
+     window.addEventListener('resize', () => {
+       if (!this.swiper) {
+         return false
+       }
+       this.initWidth(true)
+       this.swiper.refresh()
+     })
    },
    methods: {
      // 1. 初始化容器的宽度
-     initWidth() {
+     initWidth(isResize) {
        this.childrens = this.$refs.swiperSlider.children
        let widths = 0
        let length = this.childrens.length
@@ -58,7 +67,7 @@ BScroll.use(Slide)
          child.style.width = swiperWidth + 'px'
          widths += swiperWidth
        }
-       if (this.loop) {
+       if (this.loop && !isResize) {
          widths += 2 * swiperWidth;
        }
        this.$refs.swiperSlider.style.width = widths + 'px'
@@ -69,7 +78,6 @@ BScroll.use(Slide)
      },
      // 3. 初始化滚动
     initScroll() {
-      // let self = this
       // 3.1 定义better-scroll
       this.swiper = new BScroll(this.$refs.swiper, {
         scrollX: true,
@@ -95,7 +103,6 @@ BScroll.use(Slide)
        if (pageIndex === this.childrens.length - 2) {
          pageIndex = 0
        }
-      // console.log(pageIndex)
        this.timmer = setInterval(() => {
          this.swiper.goToPage(pageIndex, 0, 400)
        }, this.interval)

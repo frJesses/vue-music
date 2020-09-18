@@ -6,15 +6,35 @@ const Recommend = () => import('components/recommend/recommend')
 const Rank = () => import('components/rank/rank')
 const Search = () => import('components/search/search')
 const Singer = () => import('components/singer/singer')
+const SingerDetail = () => import('components/singer-detail/singer-detail')
 
 Vue.use(vueRouter)
 
 const routes = [
-  { path: '/', redirect: '/recommend' },
-  { path: '/recommend', component: Recommend },
-  { path: '/singer', component: Singer },
-  { path: '/rank', component: Rank },
-  { path: '/search', component: Search }
+  {
+    path: '/',
+    redirect: '/recommend'
+  },
+  {
+    path: '/recommend',
+    component: Recommend
+  },
+  {
+    path: '/singer',
+    component: Singer,
+    children: [{
+      path: ':id',
+      component: SingerDetail
+    }]
+  },
+  {
+    path: '/rank',
+    component: Rank
+  },
+  {
+    path: '/search',
+    component: Search
+  }
 ]
 
 const router = new vueRouter({

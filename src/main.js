@@ -9,6 +9,14 @@ import "./common/css/index.scss"
 // 2. 引入路由
 import router from './router/index'
 
+// 3. 引入vue-lazyload
+import VueLazyload from "vue-lazyload";
+
+Vue.use(VueLazyload, {
+  loading: require('common/image/default.png'),
+  error: require('common/image/default.png')
+})
+
 new Vue({
   router,
   render: h => h(App),

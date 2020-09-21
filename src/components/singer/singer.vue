@@ -10,6 +10,7 @@
 
  import { getSingerList } from 'api/singer'
  import { ERR_OK } from "api/config";
+ import { mapMutations } from 'vuex'
 
  export default {
    data () {
@@ -33,7 +34,12 @@
     // 处理点击每个歌手函数
     selectSinger(item) {
       this.$router.push(`/singer/${item.singer_id}`)
-    }
+      // 存储歌手信息到vuex中
+      this.setSinger(item)
+    },
+    ...mapMutations({
+      setSinger: 'SET_SINGER'
+    })
   },
   components: {
      ListView

@@ -1,8 +1,8 @@
 <template>
-  <div class="process-bar">
+  <div class="process-bar" ref="processBar">
     <div class="bar-inner">
-      <div class="progess"></div>
-      <div class="progess-btn-wrapper">
+      <div class="progess" ref="progress"></div>
+      <div class="progess-btn-wrapper" ref="progressBtn">
         <div class="progess-btn"></div>
       </div>
     </div>
@@ -10,8 +10,24 @@
 </template>
 
 <script>
+  const btnWidth = 16
   export default {
-
+    props: {
+      percent: {
+        type: Number,
+        default: 0
+      }
+    },
+    watch: {
+      percent(newPercent) {
+        if (newPercent >= 0) {
+          let barWidth = this.$refs.processBar.clientWidth - btnWidth
+          let offetWidth = this.percent * barWidth
+          this.$refs.progress.style.width = `${offetWidth}px`
+          this.$refs.progressBtn.style.transform = `translate3d(${offetWidth}px, 0, 0)`
+        }
+      }
+    }
   }
 </script>
 
@@ -28,7 +44,6 @@
       position: absolute;
       height: 100%;
       background: $color-theme;
-      width: 100px;
     }
     .progess-btn-wrapper {
       position: absolute;

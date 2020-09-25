@@ -39,24 +39,24 @@
             <span class="dot" :class="{'active': currentShow === 'lyric'}"></span>
           </div>
           <div class="process-wrapper">
-            <span class="time">0.00</span>
+            <span class="time">{{format(currentTime)}}</span>
             <div class="process-bar-wrapper">
-              <process-bar></process-bar>
+              <process-bar :percent="percent"></process-bar>
             </div>
-            <span class="time">2.34</span>
+            <span class="time">{{format(currentSong.duration)}}</span>
           </div>
           <div class="operators">
             <div class="icon icon-right">
               <i class="icon-sequence"></i>
             </div>
-            <div class="icon icon-right">
-              <i class="icon-prev"></i>
+            <div class="icon icon-right" :class="disableCls">
+              <i @click="prev" class="icon-prev" ></i>
             </div>
-            <div class="icon icon-center">
+            <div class="icon icon-center" :class="disableCls">
               <i :class="playIcon" @click="togglePlaying"></i>
             </div>
-            <div class="icon">
-              <i class="icon-next"></i>
+            <div class="icon" :class="disableCls">
+              <i @click="next" class="icon-next" ></i>
             </div>
             <div class="icon">
               <i class="icon-not-favorite"></i>
@@ -85,7 +85,12 @@
       </div>
     </transition>
     <!-- audio播放器-->
-    <audio ref="audio" :src="currentSong.url"></audio>
+    <audio ref="audio"
+           @canplay="ready"
+           @timeupdate="timeupdate"
+           @error="error"
+           @ended="end"
+    ></audio>
   </div>
 </template>
 
@@ -95,11 +100,17 @@
   import animations from 'create-keyframe-animation'
 
   import { mapGetters, mapMutations } from 'vuex'
+  import {currentSong} from "../../store/getters";
+  import { getSongVkey } from 'api/singer'
+  import { playMode } from 'common/js/config'
   export default {
     data() {
       return {
         currentShow: 'cd',
-        radius: 32
+        radius: 32,
+        musicUrl: '',
+        songReady: false,
+        currentTime: '0:00'
       }
     },
     computed: {
@@ -107,7 +118,9 @@
         'fullScreen',
         'playList',
         'currentSong',
-        'playing'
+        'playing',
+        'currentIndex',
+        'mode'
       ]),
       miniPlay() {
         return this.playing ? 'icon-pause-mini' : 'icon-play-mini'
@@ -117,6 +130,12 @@
       },
       cdCars() {
         return this.playing ? 'play' : 'play pause'
+      },
+      disableCls() {
+        return this.songReady ? '' : 'disable'
+      },
+      percent() {
+        return this.currentTime / this.currentSong.duration
       }
     },
     methods: {
@@ -128,7 +147,14 @@
       open() {
         this.setFullScreen(true)
       },
-      // 动画的实现
+      // 格式化数据
+      format(interval) {
+        interval = interval | 0
+        const minutes = interval / 60 | 0
+        const second = interval % 60 < 10 ? '0' + interval % 60 : interval % 60
+        return `${minutes}:${second}`
+      },
+      // ---------------   动画的实现   -----------------
       // 动画进来时 会执行 enter 和 afterEnter
       enter(el, done) {
         let { x, y, scale } = this._getPosition()
@@ -192,14 +218,91 @@
       togglePlaying() {
         this.setPlaying(!this.playing)
       },
+      // 获取歌词
+      getLyric() {
+        this.currentSong.getLyrics().then(res => {
+          // console.log(res)
+        })
+      },
+      // ---------------- 歌曲的前进与后退功能的实现  -------
+      // 播放前一首歌曲
+      prev() {
+        let index = this.currentIndex - 1
+        if (index < 0) {
+          index = this.playList.length - 1
+        }
+        this.setCurrentIndex(index)
+        // 防止切换太快
+        this.songReady = false
+      },
+      // 播放下一首歌曲
+      next() {
+        let index = this.currentIndex + 1
+        if (index === this.playList.length) {
+          index = 0
+        }
+        this.setCurrentIndex(index)
+        // 防止切换太快
+        this.songReady = false
+      },
+      // --------------- audio控制前进与后退太频繁导致错误 -------
+      // 歌曲缓冲到可以播放的处理函数
+      ready() {
+        this.songReady = true
+      },
+      // 歌曲播放错误的处理函数
+      error() {
+        this.songReady = true
+      },
+      // 获取歌曲播放了多长的时间
+      timeupdate(e) {
+        this.currentTime = e.target.currentTime
+      },
+      // 歌曲播放完后的处理函数
+      end() {
+        if (this.mode === playMode.loop) {
+          this.loop()
+        }else {
+          this.next()
+        }
+      },
+      // 歌曲循环播放
+      loop() {
+        this.$refs.audio.currentTime = 0
+        this.$refs.audio.play()
+      },
+      // -------------  vuex中的同步函数 -------------
       ...mapMutations({
         setFullScreen: 'SET_FULLSCREEN',
-        setPlaying: 'SET_PLAYING'
+        setPlaying: 'SET_PLAYING',
+        setCurrentIndex: 'SET_CURRENTINDEX'
       })
     },
     components: {
       ProcessBar,
       ProcessCircle
+    },
+    watch: {
+      currentSong(newSong, oldSong) {
+        if (newSong.id === oldSong.id) {
+          return
+        }
+        // 获取vkey
+        getSongVkey(newSong.mid).then(vkey => {
+          this.$refs.audio.src = 'http://ws.stream.qqmusic.qq.com/' + vkey
+          this.$nextTick(() => {
+            if (this.playing) {
+              this.$refs.audio.play()
+            }
+          })
+        })
+      },
+      playing(newPlaying) {
+        this.$nextTick(() => {
+          const audio = this.$refs.audio
+          newPlaying ? audio.play() : audio.pause()
+        })
+      }
     }
   }
 </script>
@@ -371,6 +474,9 @@
         .icon {
           flex: 1;
           color: $color-theme;
+          &.disable {
+            color: $color-theme-d;
+          }
           i {
             font-size: 30px;
           }

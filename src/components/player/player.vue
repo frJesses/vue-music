@@ -41,13 +41,13 @@
           <div class="process-wrapper">
             <span class="time">{{format(currentTime)}}</span>
             <div class="process-bar-wrapper">
-              <process-bar :percent="percent"></process-bar>
+              <process-bar :percent="percent" @percentChange="percentChange"></process-bar>
             </div>
             <span class="time">{{format(currentSong.duration)}}</span>
           </div>
           <div class="operators">
             <div class="icon icon-right">
-              <i class="icon-sequence"></i>
+              <i :class="modeIcon" @click="changeMode"></i>
             </div>
             <div class="icon icon-right" :class="disableCls">
               <i @click="prev" class="icon-prev" ></i>
@@ -75,7 +75,7 @@
           <p>{{currentSong.singer}}</p>
         </div>
         <div class="control">
-          <process-circle :radius="radius">
+          <process-circle :radius="radius" :percent="percent">
             <i class="icon-mini" @click.stop="togglePlaying" :class="miniPlay"></i>
           </process-circle>
         </div>
@@ -103,6 +103,7 @@
   import {currentSong} from "../../store/getters";
   import { getSongVkey } from 'api/singer'
   import { playMode } from 'common/js/config'
+  import { shuffer } from 'common/js/utils'
   export default {
     data() {
       return {
@@ -110,7 +111,7 @@
         radius: 32,
         musicUrl: '',
         songReady: false,
-        currentTime: '0:00'
+        currentTime: 0
       }
     },
     computed: {
@@ -120,7 +121,8 @@
         'currentSong',
         'playing',
         'currentIndex',
-        'mode'
+        'mode',
+        'sequenceList'
       ]),
       miniPlay() {
         return this.playing ? 'icon-pause-mini' : 'icon-play-mini'
@@ -136,6 +138,9 @@
       },
       percent() {
         return this.currentTime / this.currentSong.duration
+      },
+      modeIcon() {
+        return this.mode === playMode.sequence ? 'icon-sequence' : this.mode === playMode.loop ? 'icon-loop' : 'icon-random'
       }
     },
     methods: {
@@ -214,16 +219,7 @@
           y
         }
       },
-      // 点击按钮进行播放与暂停
-      togglePlaying() {
-        this.setPlaying(!this.playing)
-      },
-      // 获取歌词
-      getLyric() {
-        this.currentSong.getLyrics().then(res => {
-          // console.log(res)
-        })
-      },
+
       // ---------------- 歌曲的前进与后退功能的实现  -------
       // 播放前一首歌曲
       prev() {
@@ -245,6 +241,48 @@
         // 防止切换太快
         this.songReady = false
       },
+      // 歌曲循环播放
+      loop() {
+        this.$refs.audio.currentTime = 0
+        this.$refs.audio.play()
+      },
+      // 点击按钮进行播放与暂停
+      togglePlaying() {
+        this.setPlaying(!this.playing)
+      },
+      // 改变歌曲播放模式
+      changeMode() {
+        const mode = (this.mode + 1) % 3
+        this.setMode(mode)
+        // 如果是随机播放
+        let list = null
+        if (mode === playMode.random) {
+          list = shuffer(this.sequenceList)
+        }else {
+          list = this.sequenceList
+        }
+        // 因为数组被打乱了，所以需要重新设置索引值
+        this.getNewCurrentIndex(list)
+        this.setPlayList(list)
+      },
+      // 重新设置索引值
+      getNewCurrentIndex(list) {
+        let index = list.findIndex(item => {
+          return item.id === this.currentSong.id
+        })
+        this.setCurrentIndex(index)
+      },
+      // 歌曲的进度条发生改变
+      percentChange(percent) {
+        this.$refs.audio.currentTime = this.currentSong.duration * percent
+      },
+      // 获取歌词
+      getLyric() {
+        this.currentSong.getLyrics().then(res => {
+          // console.log(res)
+        })
+      },
+
       // --------------- audio控制前进与后退太频繁导致错误 -------
       // 歌曲缓冲到可以播放的处理函数
       ready() {
@@ -266,16 +304,14 @@
           this.next()
         }
       },
-      // 歌曲循环播放
-      loop() {
-        this.$refs.audio.currentTime = 0
-        this.$refs.audio.play()
-      },
+
       // -------------  vuex中的同步函数 -------------
       ...mapMutations({
         setFullScreen: 'SET_FULLSCREEN',
         setPlaying: 'SET_PLAYING',
-        setCurrentIndex: 'SET_CURRENTINDEX'
+        setCurrentIndex: 'SET_CURRENTINDEX',
+        setMode: 'SET_MODE',
+        setPlayList: 'SET_PLAYLIST'
       })
     },
     components: {

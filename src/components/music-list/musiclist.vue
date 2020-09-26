@@ -43,7 +43,7 @@
     props: {
       title: {
         type: String,
-        default: '张一三'
+        default: ''
       },
       bgImg: {
         type: String,

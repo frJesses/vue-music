@@ -1,8 +1,13 @@
 <template>
-  <div class="process-bar" ref="processBar">
+  <div class="process-bar" ref="processBar" @click="progressClick">
     <div class="bar-inner">
       <div class="progess" ref="progress"></div>
-      <div class="progess-btn-wrapper" ref="progressBtn">
+      <div class="progess-btn-wrapper"
+           ref="progressBtn"
+           @touchstart.prevent="progressTouchStart"
+           @touchmove.prevent="progressTouchMove"
+           @touchend.prevent="progressTouchEnd"
+      >
         <div class="progess-btn"></div>
       </div>
     </div>
@@ -18,13 +23,60 @@
         default: 0
       }
     },
+    created() {
+      this.touch = {}
+    },
+    methods: {
+      //  -------------  触摸事件 ------------------
+      // 触摸开始
+      progressTouchStart(e) {
+        this.touch.inited = true
+        this.touch.startX = e.touches[0].pageX
+        this.touch.left = this.$refs.progress.clientWidth
+      },
+      // 触摸移动
+      progressTouchMove(e) {
+        if (!this.touch.inited) {
+          return
+        }
+        // 计算两次插值
+        let detal = e.touches[0].pageX - this.touch.startX
+        // 计算可以滑动的距离
+        let offsetWidth = Math.min(this.$refs.processBar.clientWidth - btnWidth, Math.max(0,
+          detal + this.touch.left))
+        console.log(offsetWidth)
+        this._offsetWidth(offsetWidth)
+      },
+      // 触摸结束
+      progressTouchEnd() {
+        this.touch.inited = false
+        this.triggerPercent()
+      },
+      // 进度条改变
+      triggerPercent() {
+        let barWidth = this.$refs.processBar.clientWidth - btnWidth
+        let percent = this.$refs.progress.clientWidth / barWidth
+        this.$emit('percentChange', percent)
+      },
+      //  点击进度条发生改变
+      progressClick(e) {
+        let reat = this.$refs.progress.getBoundingClientRect().left | 0
+        let offsetWidth = e.pageX - reat - btnWidth / 2
+        this._offsetWidth(offsetWidth)
+        this.triggerPercent()
+      },
+      // 封装
+      _offsetWidth(offsetWidth) {
+        this.$refs.progress.style.width = `${offsetWidth}px`
+        this.$refs.progressBtn.style.transform = `translate3d(${offsetWidth}px, 0, 0)`
+      }
+    },
     watch: {
       percent(newPercent) {
-        if (newPercent >= 0) {
+        if (newPercent >= 0 && !this.touch.inited) {
           let barWidth = this.$refs.processBar.clientWidth - btnWidth
-          let offetWidth = this.percent * barWidth
-          this.$refs.progress.style.width = `${offetWidth}px`
-          this.$refs.progressBtn.style.transform = `translate3d(${offetWidth}px, 0, 0)`
+          let offsetWidth = this.percent * barWidth
+          this._offsetWidth(offsetWidth)
         }
       }
     }

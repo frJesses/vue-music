@@ -29,6 +29,10 @@
       radius: {
         type: Number,
         default: 100
+      },
+      percent: {
+        type: Number,
+        default: 0
       }
     },
     data() {

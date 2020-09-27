@@ -8,7 +8,7 @@
       <div class="play-wrapper" ref="playWrapper">
         <div class="play">
           <i class="icon-play"></i>
-          <span>随机播放</span>
+          <span @click="random">随机播放全部</span>
         </div>
       </div>
       <div class="filter"></div>
@@ -91,8 +91,15 @@
           index
         })
       },
+      // 点击随机播放全部的处理函数
+      random() {
+        this.randomPlay({
+          list: this.song
+        })
+      },
       ...mapActions([
-        'setPlay'
+        'setPlay',
+        'randomPlay'
       ])
     },
     components: {

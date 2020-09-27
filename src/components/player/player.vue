@@ -17,7 +17,11 @@
           <h1>{{currentSong.name}}</h1>
           <h2>{{currentSong.singer}}</h2>
         </div>
-        <div class="middle">
+        <div class="middle"
+             @touchstart.prevent="middleTouchStart"
+             @touchmove.prevent="middleTouchMove"
+             @touchend.prevent="middleTouchEnd"
+        >
           <div class="middle-l">
             <div class="cd-wrapper" ref="cdWrapper">
               <div class="cd" :class="cdCars">
@@ -25,13 +29,26 @@
               </div>
             </div>
             <div class="playing-lyric-wrapper">
-              <div class="playing-lyric">21345</div>
+              <div class="playing-lyric">{{playLyric}}</div>
             </div>
           </div>
-          <div class="middle-r">
+          <Scroll class="middle-r"
+                  :data="currentLyric && currentLyric.lines"
+                  ref="LyricWrapper"
+          >
             <div class="lyric-wrapper">
+              <div v-if="currentLyric">
+                <p class="text"
+                   v-for="(item, index) in currentLyric.lines"
+                   :key="index"
+                   :class="{'current': lyricLineNum === index}"
+                   ref="lyricNum"
+                >
+                  {{item.txt}}
+                </p>
+              </div>
             </div>
-          </div>
+          </Scroll>
         </div>
         <div class="bottom">
           <div class="dots-wrapper">
@@ -98,12 +115,15 @@
   import ProcessBar from 'base/process-bar/process-bar'
   import ProcessCircle from 'base/process-circle/process-circle'
   import animations from 'create-keyframe-animation'
+  import Lyric from 'lyric-parser'
+  import Scroll from 'base/scroll/scroll'
 
   import { mapGetters, mapMutations } from 'vuex'
   import {currentSong} from "../../store/getters";
   import { getSongVkey } from 'api/singer'
   import { playMode } from 'common/js/config'
   import { shuffer } from 'common/js/utils'
+
   export default {
     data() {
       return {
@@ -111,8 +131,14 @@
         radius: 32,
         musicUrl: '',
         songReady: false,
-        currentTime: 0
+        currentTime: 0,
+        currentLyric: null,
+        playLyric: '',
+        lyricLineNum: 0
       }
+    },
+    created() {
+      this.touch = {}
     },
     computed: {
       ...mapGetters([
@@ -159,6 +185,7 @@
         const second = interval % 60 < 10 ? '0' + interval % 60 : interval % 60
         return `${minutes}:${second}`
       },
+
       // ---------------   动画的实现   -----------------
       // 动画进来时 会执行 enter 和 afterEnter
       enter(el, done) {
@@ -279,8 +306,26 @@
       // 获取歌词
       getLyric() {
         this.currentSong.getLyrics().then(res => {
-          // console.log(res)
+          this.currentLyric = new Lyric(res, this.handler)
+          if (this.playing) {
+            this.currentLyric.play()
+          }
+        }).catch(err => {
+          this.lyricLineNum = 0
+          this.currentLyric = null
+          this.currentTime = 0
         })
+      },
+      // 处理歌词函数
+      handler({lineNum, txt}) {
+        this.lyricLineNum = lineNum
+        if (lineNum > 5) {
+          let lyEle = this.$refs.lyricNum[lineNum - 5]
+          this.$refs.LyricWrapper.scrollToElement(lyEle, 1000)
+        } else {
+          this.$refs.LyricWrapper.scrollTo(0, 0, 800)
+        }
+        this.playLyric = txt
       },
 
       // --------------- audio控制前进与后退太频繁导致错误 -------
@@ -305,6 +350,28 @@
         }
       },
 
+      // ------------- 播放器与歌词左右切换 ----------
+      middleTouchStart(e) {
+        this.touch.inited = true
+        const touch = e.touches[0]
+        this.touch.startX = touch.pageX
+        this.touch.startY = touch.pageY
+      },
+      middleTouchMove(e) {
+        if (!this.touch.inited) {
+          return
+        }
+        const touch = e.touches[0]
+        let detalX = touch.pageX - this.touch.startX
+        let detalY = touch.pageY - this.touch.pageY
+        // 如果移动Y大于X则认为是X轴移动
+        if (detalY > detalX) {
+          return
+        }
+
+      },
+      middleTouchEnd() {},
+
       // -------------  vuex中的同步函数 -------------
       ...mapMutations({
         setFullScreen: 'SET_FULLSCREEN',
@@ -316,7 +383,8 @@
     },
     components: {
       ProcessBar,
-      ProcessCircle
+      ProcessCircle,
+      Scroll
     },
     watch: {
       currentSong(newSong, oldSong) {
@@ -329,6 +397,8 @@
           this.$nextTick(() => {
             if (this.playing) {
               this.$refs.audio.play()
+              // 获取歌词
+              this.getLyric()
             }
           })
         })
@@ -462,6 +532,14 @@
           margin: 0 auto;
           overflow: hidden;
           text-align: center;
+          .text {
+            line-height: 32px;
+            color: $color-text-l;
+            font-size: $font-size-medium;
+            &.current {
+              color: $color-text;
+            }
+          }
         }
       }
     }

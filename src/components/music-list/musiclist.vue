@@ -26,20 +26,26 @@
             @pullUp="pullUp"
     >
       <div class="song-list-wrapper">
-        <song-list :song="song" @select="selectItem" />
+        <song-list :song="song" :rank="rank" @select="selectItem" />
       </div>
     </Scroll>
+    <div class="loading-wrapper" v-show="!song.length">
+      <loading></loading>
+    </div>
   </div>
 </template>
 
 <script>
   import Scroll from 'base/scroll/scroll';
   import SongList from 'base/song-list/song-list'
+  import Loading from 'base/loading/loading'
 
   import { mapActions } from 'vuex'
+  import { playMinix } from 'common/js/minix'
 
   const RESEVER_HEIGHT = 40
   export default {
+    mixins: [playMinix],
     props: {
       title: {
         type: String,
@@ -54,6 +60,10 @@
         default() {
           return []
         }
+      },
+      rank: {
+        type: Boolean,
+        default: false
       }
     },
     computed: {
@@ -72,6 +82,12 @@
       }
     },
     methods: {
+      // 处理迷你播放器展示后遮挡内容
+      handlePlayList(playlist) {
+        const bottom = playlist.length > 0 ? '60px' : 0
+        this.$refs.scrollList.$el.style.bottom = bottom
+        this.$refs.scrollList.refresh()
+      },
       // 点击返回图标返回上一个路由
       back() {
         this.$router.back()
@@ -104,7 +120,8 @@
     },
     components: {
       Scroll,
-      SongList
+      SongList,
+      Loading
     },
     watch: {
       saveY(newY) {
@@ -230,6 +247,12 @@
       .song-list-wrapper {
         padding: 20px 30px;
       }
+    }
+    .loading-wrapper {
+      position: absolute;
+      left: 50%;
+      top: 55%;
+      transform: translate(-50%, -50%);
     }
   }
 </style>

@@ -22,7 +22,7 @@
              @touchmove.prevent="middleTouchMove"
              @touchend.prevent="middleTouchEnd"
         >
-          <div class="middle-l">
+          <div class="middle-l" ref="middleL">
             <div class="cd-wrapper" ref="cdWrapper">
               <div class="cd" :class="cdCars">
                 <img :src="currentSong.image" alt="">
@@ -275,7 +275,14 @@
       },
       // 点击按钮进行播放与暂停
       togglePlaying() {
+        if (!this.songReady) {
+          return
+        }
         this.setPlaying(!this.playing)
+        // 歌曲的暂停与播放
+        if (this.currentLyric) {
+          this.currentLyric.togglePlay()
+        }
       },
       // 改变歌曲播放模式
       changeMode() {
@@ -301,7 +308,15 @@
       },
       // 歌曲的进度条发生改变
       percentChange(percent) {
-        this.$refs.audio.currentTime = this.currentSong.duration * percent
+        let currentTime = this.currentSong.duration * percent
+        this.$refs.audio.currentTime = currentTime
+        if (!this.playing) {
+          this.togglePlaying()
+        }
+        // 歌词随着进度条的改变而改变
+        if (this.currentLyric) {
+          this.currentLyric.seek(currentTime * 1000)
+        }
       },
       // 获取歌词
       getLyric() {
@@ -368,9 +383,43 @@
         if (detalY > detalX) {
           return
         }
-
+        // 获取left的值
+        const left = this.currentShow === 'cd' ? 0 : -window.innerWidth
+        // 获取移动的范围
+        let width = Math.min(0, Math.max(-window.innerWidth, detalX + left))
+        // 记录移动的百分比
+        this.touch.percent = Math.abs(width / window.innerWidth)
+        this.$refs.LyricWrapper.$el.style.transform =  `translate3d(${width}px, 0, 0)`
+        this.$refs.LyricWrapper.$el.style.transitionDuration =  0
+        this.$refs.middleL.style.opacity = 1 - this.touch.percent
+        this.$refs.middleL.style.transitionDuration = 0
       },
-      middleTouchEnd() {},
+      middleTouchEnd() {
+        let offsetWidth, opacity, time = 300
+        if (this.currentShow === 'cd') {
+          if (this.touch.percent > 0.1) {
+            offsetWidth = -window.innerWidth
+            opacity = 0
+            this.currentShow = 'lyric'
+          }else {
+            opacity = 1
+            offsetWidth = 0
+          }
+        }else {
+          if (this.touch.percent < 0.9) {
+            offsetWidth = 0
+            opacity = 1
+            this.currentShow = 'cd'
+          }else {
+            offsetWidth = -window.innerWidth
+            opacity = 0
+          }
+        }
+        this.$refs.LyricWrapper.$el.style.transform =  `translate3d(${offsetWidth}px, 0, 0)`
+        this.$refs.LyricWrapper.$el.style.transitionDuration = `${time}ms`
+        this.$refs.middleL.style.opacity = opacity
+        this.$refs.middleL.style.transitionDuration = `${time}ms`
+      },
 
       // -------------  vuex中的同步函数 -------------
       ...mapMutations({

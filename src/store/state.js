@@ -6,7 +6,9 @@ const state = {
   mode: playMode.sequence, // 记录歌曲的播放模式
   playList: [], // 记录播放歌曲的列表
   sequenceList: [], // 记录各种模式下的列表
-  currentIndex: -1  // 记录播放歌曲的索引值
+  currentIndex: -1,  // 记录播放歌曲的索引值
+  disc: {},  // 记录热门歌单推荐数据
+  toplist: {}, // 记录排行数据
 }
 
 export default state

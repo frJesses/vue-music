@@ -183,7 +183,7 @@
       },
       // 刷新函数
       refresh() {
-        this.$refs.listview.refresh()
+        this.$refs.listview && this.$refs.listview.refresh()
       },
       // 监听页面滚动
       scroll(pos) {

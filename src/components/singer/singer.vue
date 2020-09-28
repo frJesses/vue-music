@@ -1,6 +1,6 @@
 <template>
- <div class="singer">
-   <list-view :list="singers" @select="selectSinger"></list-view>
+ <div class="singer" ref="singer">
+   <list-view :list="singers" @select="selectSinger" ref="list"></list-view>
    <router-view></router-view>
  </div>
 </template>
@@ -11,8 +11,10 @@
  import { getSingerList } from 'api/singer'
  import { ERR_OK } from "api/config";
  import { mapMutations } from 'vuex'
+ import { playMinix } from 'common/js/minix'
 
  export default {
+   mixins: [playMinix],
    data () {
      return {
        singers: []
@@ -22,6 +24,12 @@
     this._getSingerList()
   },
   methods: {
+     // 处理迷你播放器展示后遮挡内容
+    handlePlayList(playlist) {
+      const bottom = playlist.length > 0 ? '60px' : 0
+      this.$refs.singer.style.bottom = bottom
+      this.$refs.list.refresh()
+    },
      // 获取数据
     _getSingerList() {
      const hot = -100

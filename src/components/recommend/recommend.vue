@@ -1,5 +1,5 @@
 <template>
- <div class="recommend">
+ <div class="recommend" ref="recommend">
    <BScroll class="scroll-wrapper" :data="recommendList" ref="scrollWrapper">
      <div>
        <!-- 存放轮播图容器 -->
@@ -16,7 +16,11 @@
        <div class="recommend-list">
          <h1 class="list-title">热门歌单推荐</h1>
          <ul>
-           <li class="item" v-for="(item, index) in recommendList" :key="index">
+           <li class="item"
+               v-for="(item, index) in recommendList"
+               :key="index"
+               @click="clickItem(item)"
+           >
              <div class="l-image">
                <img v-lazy="item.imgurl" @load="imgLoad" alt="">
              </div>
@@ -33,6 +37,7 @@
    <div class="loading-wrapper" v-if="!recommendList.length">
      <loading></loading>
    </div>
+   <router-view></router-view>
  </div>
 </template>
 
@@ -43,8 +48,12 @@ import Loading from 'base/loading/loading'
 
 import { getSongList } from 'api/recommend'
 import { ERR_OK } from 'api/config'
+import { mapMutations } from 'vuex'
 import _ from 'loadsh'
+import { playMinix } from 'common/js/minix'
+
  export default {
+   mixins: [playMinix],
    data () {
      return {
        imgs: [
@@ -90,8 +99,24 @@ import _ from 'loadsh'
      },
      // 解决图片加载不了的问题
      imgLoad: _.debounce(function () {
-        this.$refs.scrollWrapper.refresh()
-     }, 20)
+       this.$refs.scrollWrapper && this.$refs.scrollWrapper.refresh()
+     }, 20),
+     //  点击歌单进入下一级路由
+     clickItem(item) {
+       this.$router.push({
+         path: `/recommend/${item.dissid}`
+       })
+       this.setDisc(item)
+     },
+     // 处理迷你播放器展示后遮挡内容
+     handlePlayList(playlist) {
+       const bottom = playlist.length > 0 ? '60px' : 0
+       this.$refs.recommend.style.bottom = bottom
+       this.$refs.scrollWrapper.refresh()
+     },
+     ...mapMutations({
+       setDisc: 'SET_DISC'
+     })
    },
    components: {
      Swiper,

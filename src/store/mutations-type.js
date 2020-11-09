@@ -15,3 +15,11 @@ export const SET_CURRENTINDEX = 'SET_CURRENTINDEX'
 export const SET_DISC  = 'SET_DISC'
 
 export const SET_TOPLIST = 'SET_TOPLIST'
+
+export const SET_SEARCH_HISTORY = 'SET_SEARCH_HISTORY'
+
+export const SET_PLAY_HISTORY = 'SET_PLAY_HISTORY'
+
+export const SET_FAVORITE = 'SET_FAVORITE'
+
+export const SET_LIST_USER = 'SET_LIST_USER'

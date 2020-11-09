@@ -84,7 +84,8 @@ BScroll.use(Slide)
         scrollY: false,
         slide: true,
         momentum: false,
-        swipeTime: 400
+        swipeTime: 400,
+        snapLoop: true
       })
       // 3.2 小圆点跟随图片的滚动而变化
       this.swiper.on('slideWillChange', (page) => {

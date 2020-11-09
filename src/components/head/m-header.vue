@@ -2,7 +2,7 @@
  <div class="m-header">
    <div class="icon"></div>
    <div class="text">Chicken Music</div>
-   <div class="mine">
+   <div class="mine" @click="selectItem">
      <i class="icon-mine"></i>
    </div>
  </div>
@@ -10,13 +10,12 @@
 
 <script>
  export default {
-   data () {
-     return {
-
+   methods: {
+     selectItem() {
+       this.$router.push({
+         path: '/user'
+       })
      }
-   },
-   components: {
-
    }
  }
 </script>

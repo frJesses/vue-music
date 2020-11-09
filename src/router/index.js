@@ -9,6 +9,7 @@ const Singer = () => import('components/singer/singer')
 const SingerDetail = () => import('components/singer-detail/singer-detail')
 const Disc = () => import('components/disc/disc')
 const TopList = () => import('components/toplist/toplist')
+const User = () => import('components/user/user')
 
 Vue.use(vueRouter)
 
@@ -43,7 +44,15 @@ const routes = [
   },
   {
     path: '/search',
-    component: Search
+    component: Search,
+    children: [{
+      path: ':id',
+      component: SingerDetail
+    }]
+  },
+  {
+    path: '/user',
+    component: User
   }
 ]
 

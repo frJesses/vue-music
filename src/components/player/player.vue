@@ -76,7 +76,7 @@
               <i @click="next" class="icon-next" ></i>
             </div>
             <div class="icon">
-              <i class="icon-not-favorite"></i>
+              <i class="icon" @click="toggleIcon(currentSong)" :class="getFavoriteIcon(currentSong)"></i>
             </div>
           </div>
         </div>
@@ -96,11 +96,12 @@
             <i class="icon-mini" @click.stop="togglePlaying" :class="miniPlay"></i>
           </process-circle>
         </div>
-        <div class="control">
+        <div class="control" @click.stop="showPlaylist">
           <i class="icon-playlist"></i>
         </div>
       </div>
     </transition>
+    <PlayList ref="playList"></PlayList>
     <!-- audio播放器-->
     <audio ref="audio"
            @canplay="ready"
@@ -108,6 +109,12 @@
            @error="error"
            @ended="end"
     ></audio>
+    <Confirm :text="'出现资源异常,估计为vip列表歌曲'"
+             ref="confirm"
+             @cancle="refreshErr"
+             @comfirm="refreshErr"
+    >
+    </Confirm>
   </div>
 </template>
 
@@ -117,14 +124,16 @@
   import animations from 'create-keyframe-animation'
   import Lyric from 'lyric-parser'
   import Scroll from 'base/scroll/scroll'
+  import PlayList from 'components/playlist/playlist'
+  import Confirm from 'base/confirm/confirm'
 
-  import { mapGetters, mapMutations } from 'vuex'
-  import {currentSong} from "../../store/getters";
+  import { mapGetters, mapMutations, mapActions } from 'vuex'
   import { getSongVkey } from 'api/singer'
+  import { playerMinix } from 'common/js/minix'
   import { playMode } from 'common/js/config'
-  import { shuffer } from 'common/js/utils'
 
   export default {
+    mixins: [playerMinix],
     data() {
       return {
         currentShow: 'cd',
@@ -134,7 +143,8 @@
         currentTime: 0,
         currentLyric: null,
         playLyric: '',
-        lyricLineNum: 0
+        lyricLineNum: 0,
+        errNum: 0
       }
     },
     created() {
@@ -143,12 +153,8 @@
     computed: {
       ...mapGetters([
         'fullScreen',
-        'playList',
-        'currentSong',
         'playing',
-        'currentIndex',
-        'mode',
-        'sequenceList'
+        'currentIndex'
       ]),
       miniPlay() {
         return this.playing ? 'icon-pause-mini' : 'icon-play-mini'
@@ -164,9 +170,6 @@
       },
       percent() {
         return this.currentTime / this.currentSong.duration
-      },
-      modeIcon() {
-        return this.mode === playMode.sequence ? 'icon-sequence' : this.mode === playMode.loop ? 'icon-loop' : 'icon-random'
       }
     },
     methods: {
@@ -174,9 +177,17 @@
       back() {
         this.setFullScreen(false)
       },
+      // 播放资源错误处理
+      refreshErr() {
+        this.$router.go(0)
+      },
       // 点击迷你播放器，进入全屏播放器
       open() {
         this.setFullScreen(true)
+      },
+      // 显示playlist组件
+      showPlaylist() {
+        this.$refs.playList.show()
       },
       // 格式化数据
       format(interval) {
@@ -254,6 +265,9 @@
         if (index < 0) {
           index = this.playList.length - 1
         }
+        if (!this.playing) {
+          this.togglePlaying()
+        }
         this.setCurrentIndex(index)
         // 防止切换太快
         this.songReady = false
@@ -264,6 +278,9 @@
         if (index === this.playList.length) {
           index = 0
         }
+        if (!this.playing) {
+          this.togglePlaying()
+        }
         this.setCurrentIndex(index)
         // 防止切换太快
         this.songReady = false
@@ -272,6 +289,9 @@
       loop() {
         this.$refs.audio.currentTime = 0
         this.$refs.audio.play()
+        if (this.currentLyric) {
+          this.currentLyric.seek(0)
+        }
       },
       // 点击按钮进行播放与暂停
       togglePlaying() {
@@ -283,28 +303,6 @@
         if (this.currentLyric) {
           this.currentLyric.togglePlay()
         }
-      },
-      // 改变歌曲播放模式
-      changeMode() {
-        const mode = (this.mode + 1) % 3
-        this.setMode(mode)
-        // 如果是随机播放
-        let list = null
-        if (mode === playMode.random) {
-          list = shuffer(this.sequenceList)
-        }else {
-          list = this.sequenceList
-        }
-        // 因为数组被打乱了，所以需要重新设置索引值
-        this.getNewCurrentIndex(list)
-        this.setPlayList(list)
-      },
-      // 重新设置索引值
-      getNewCurrentIndex(list) {
-        let index = list.findIndex(item => {
-          return item.id === this.currentSong.id
-        })
-        this.setCurrentIndex(index)
       },
       // 歌曲的进度条发生改变
       percentChange(percent) {
@@ -336,9 +334,9 @@
         this.lyricLineNum = lineNum
         if (lineNum > 5) {
           let lyEle = this.$refs.lyricNum[lineNum - 5]
-          this.$refs.LyricWrapper.scrollToElement(lyEle, 1000)
+          this.$refs.LyricWrapper && this.$refs.LyricWrapper.scrollToElement(lyEle, 1000)
         } else {
-          this.$refs.LyricWrapper.scrollTo(0, 0, 800)
+          this.$refs.LyricWrapper && this.$refs.LyricWrapper.scrollTo(0, 0, 1000)
         }
         this.playLyric = txt
       },
@@ -347,6 +345,7 @@
       // 歌曲缓冲到可以播放的处理函数
       ready() {
         this.songReady = true
+        this.setPlayHistory(this.currentSong)
       },
       // 歌曲播放错误的处理函数
       error() {
@@ -423,33 +422,49 @@
 
       // -------------  vuex中的同步函数 -------------
       ...mapMutations({
-        setFullScreen: 'SET_FULLSCREEN',
-        setPlaying: 'SET_PLAYING',
-        setCurrentIndex: 'SET_CURRENTINDEX',
-        setMode: 'SET_MODE',
-        setPlayList: 'SET_PLAYLIST'
-      })
+        setFullScreen: 'SET_FULLSCREEN'
+      }),
+      ...mapActions([
+        'setPlayHistory'
+      ])
     },
     components: {
       ProcessBar,
       ProcessCircle,
-      Scroll
+      Scroll,
+      PlayList,
+      Confirm
     },
     watch: {
       currentSong(newSong, oldSong) {
+        if (!newSong.id) {
+          return
+        }
         if (newSong.id === oldSong.id) {
           return
+        }
+        if (this.currentLyric) {
+          this.currentLyric.stop()
+          this.currentTime = 0
+          this.playLyric = ''
+          this.lyricLineNum = 0
         }
         // 获取vkey
         getSongVkey(newSong.mid).then(vkey => {
           this.$refs.audio.src = 'http://ws.stream.qqmusic.qq.com/' + vkey
-          this.$nextTick(() => {
-            if (this.playing) {
-              this.$refs.audio.play()
-              // 获取歌词
-              this.getLyric()
-            }
-          })
+          if (vkey) {
+            this.errNum = 0
+            this.$nextTick(() => {
+              if (this.playing) {
+                this.$refs.audio.play()
+                // 获取歌词
+                this.getLyric()
+              }
+            })
+          } else {
+              this.$refs.confirm.show()
+              return
+          }
         })
       },
       playing(newPlaying) {
@@ -646,6 +661,9 @@
           .icon-play,
           .icon-pause {
             font-size: 40px;
+          }
+          .icon-favorite {
+            color: red;
           }
         }
         .icon-left {

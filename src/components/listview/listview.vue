@@ -48,7 +48,7 @@
       <div class="triangle"></div>
     </div>
     <!-- 加载组件-->
-    <div class="loading-wrapper" v-if="!singer.length">
+    <div class="loading-wrapper" v-show="!list.length">
       <loading></loading>
     </div>
   </scroll>

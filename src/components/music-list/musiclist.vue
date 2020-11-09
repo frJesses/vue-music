@@ -28,10 +28,10 @@
       <div class="song-list-wrapper">
         <song-list :song="song" :rank="rank" @select="selectItem" />
       </div>
+      <div class="loading-wrapper" v-show="!song.length || refresh">
+        <loading></loading>
+      </div>
     </Scroll>
-    <div class="loading-wrapper" v-show="!song.length">
-      <loading></loading>
-    </div>
   </div>
 </template>
 
@@ -62,6 +62,10 @@
         }
       },
       rank: {
+        type: Boolean,
+        default: false
+      },
+      refresh: {
         type: Boolean,
         default: false
       }
@@ -98,7 +102,10 @@
       },
       // 监听下拉加载更多
       pullUp() {
-        this.$emit('scrollEnd')
+        if (!this.refresh) {
+          this.$emit('scrollEnd')
+          this.$refs.scrollList.finishPullUp()
+        }
       },
       // 处理点击歌曲后的事件
       selectItem(song, index) {

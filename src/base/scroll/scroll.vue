@@ -6,6 +6,8 @@
 
 <script>
   import BScroll from '@better-scroll/core'
+  import Pullup from '@better-scroll/pull-up'
+  BScroll.use(Pullup)
   export default {
     props: {
       probeType: {
@@ -29,6 +31,10 @@
       pullup: {
         type: Boolean,
         default: false
+      },
+      refreshDelay: {
+        type: Number,
+        default: 20
       }
     },
     mounted() {
@@ -44,7 +50,11 @@
         }
         this.scroll = new BScroll(this.$refs.wrapper, {
           click: this.click,
-          probeType: this.probeType
+          probeType: this.probeType,
+          pullUpLoad: {
+            threshold: 50
+          },
+          scrollY: true
         })
         // 1. 监听滚动事件
         if (this.listenScroll) {
@@ -72,13 +82,17 @@
       // 滚动到指定的位置
       scrollTo() {
         this.scroll && this.scroll.scrollTo.apply(this.scroll, arguments)
+      },
+      // 完成下拉加载更多
+      finishPullUp() {
+        this.scroll && this.scroll.finishPullUp()
       }
     },
     watch: {
       data() {
         setTimeout(() => {
           this.refresh()
-        }, 20)
+        }, this.refreshDelay)
       }
     }
   }

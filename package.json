@@ -9,10 +9,12 @@
   },
   "dependencies": {
     "@better-scroll/core": "^2.0.3",
+    "@better-scroll/pull-up": "^2.0.4",
     "@better-scroll/slide": "^2.0.3",
     "axios": "^0.20.0",
     "core-js": "^3.6.5",
     "create-keyframe-animation": "^0.1.0",
+    "good-storage": "^1.1.1",
     "js-base64": "^3.5.2",
     "jsonp": "^0.2.1",
     "loadsh": "0.0.4",

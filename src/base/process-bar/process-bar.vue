@@ -44,7 +44,6 @@
         // 计算可以滑动的距离
         let offsetWidth = Math.min(this.$refs.processBar.clientWidth - btnWidth, Math.max(0,
           detal + this.touch.left))
-        console.log(offsetWidth)
         this._offsetWidth(offsetWidth)
       },
       // 触摸结束

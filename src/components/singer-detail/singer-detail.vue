@@ -1,6 +1,11 @@
 <template>
   <transition name="slide">
-    <music-list :title="title" :bg-img="bgImg" :song="song" @scrollEnd="scrollEnd" />
+    <music-list :title="title"
+                :bg-img="bgImg"
+                :song="song"
+                @scrollEnd="scrollEnd"
+                :refresh="refresh"
+    />
   </transition>
 </template>
 
@@ -33,7 +38,8 @@
     data() {
       return {
         num: 0,
-        song: []
+        song: [],
+        refresh: false
       }
     },
     methods: {
@@ -63,6 +69,10 @@
       },
       // 下拉加载下一页数据
       scrollEnd() {
+        this.refresh = true
+        setTimeout(() => {
+          this.refresh = false
+        }, 1000)
         this.num += 1
         this._getSingerSongs()
       }
